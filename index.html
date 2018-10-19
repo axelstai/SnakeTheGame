@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<style>
+body {
+    margin: 0;
+}
+canvas {
+    border:1px solid #d3d3d3;
+    background-color: #f1f1f1;
+}
+</style>
+</head>
+<body onload="startGame()">
+<script>
+//Her defineres alle objektene i spillet
+//var name = new component(x, y, color, width, height, instance, type)
+var snakeLength = 2;
+var snakeBody = []; //Her lagres alle delene som er kroppen til slangen (ikke hode og hale)
+
+for (i = 0; i <= snakeLength; i++) {
+  snakeBody[i] = new component(300, 300, "green", 12, 12, "main", "rectangle");
+}
+console.log(snakeBody);
+
+function startGame() {
+    Game.start();
+}
+
+//Lag array for items som skal bli rendered
+//Lag en egen instance for objekter som ikke skal rendres
+
+var Game = { //Game er objektet som inneholder
+    canvas : document.createElement("canvas"),
+    start : function() {
+        this.canvas.width = 696;
+        this.canvas.height = 504;
+        this.context = this.canvas.getContext("2d");
+        document.body.insertBefore(this.canvas, document.body.childNodes[0]); // Legger inn Canvas som den første "child" til body
+        this.interval = setInterval(updateGameArea, 400); //Her velges frameraten til spillet
+
+        //Museklikk
+        window.addEventListener('mousedown', function (e) {
+            Game.mouseX = e.pageX;
+            Game.mouseY = e.pageY;
+        })
+        window.addEventListener('mouseup', function (e) {
+            Game.mouseX = false;
+            Game.mouseY = false;
+        })
+
+        //Tastaturtrykk
+        window.addEventListener('keydown', function (e) {
+          Game.key = e.keyCode;
+        })
+        window.addEventListener('keyup', function (e) {
+          Game.key = false;
+        })
+    },
+    clear : function(){
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+}
+
+function component(x, y, color, width, height, instance, type) { //Instance brukes ikke enda
+    this.x = x;
+    this.y = y;
+    if (type == "rectangle") {
+      this.width = width;
+      this.height = height;
+      this.draw = function() {
+        Game.context.fillStyle = color;
+        Game.context.fillRect(this.x, this.y, this.width, this.height);
+      }
+    }
+    this.clicked = function() { // Sjekker om componenten har blitt klikket
+        var myleft = this.x;
+        var myright = this.x + (this.width);
+        var mytop = this.y;
+        var mybottom = this.y + (this.height);
+        var clicked = true;
+        //Denne virker bare på rektangulære componenter
+        if ((mybottom < Game.mouseY) || (mytop > Game.mouseY) || (myright < Game.mouseX) || (myleft > Game.mouseX)) {
+            clicked = false;
+        }
+        return clicked;
+    }
+    console.log(this);
+}
+
+//  c1, c2, c3... osv er posisjonen til kuber som er byggeklossene til å lage figurer i et 3x3 felt
+//  Disse figuere må defineres i toppen av filen og tegnes med funksjonen gamepiece() under
+//  Slik ser det ut i praksis:
+//
+//  c1 c2 c3
+//  c4 c5 c6
+//  c7 c8 c9
+//
+function gamepiece(x, y, color, c1, c2, c3, c4, c5, c6, c7, c8, c9) {
+  this.cubes = [c1, c2, c3, c4, c5, c6, c7, c8, c9];
+  this.x = x;
+  this.y = y;
+  console.log(this);
+  this.draw = function() {
+    var x = 0;
+    var y = 0;
+    for (i = 1; i <= 9; i++) {
+      if (i == 4) {
+        x -= 150;
+        y += 50;
+      }
+      else if (i == 7) {
+        x -= 150;
+        y += 50;
+      }
+      if (this.cubes[i - 1] == 1) {
+        Game.context.fillStyle = color;
+        Game.context.fillRect(this.x + x, this.y + y, 50, 50);
+      }
+      x += 50;
+    }
+  }
+}
+
+var snakeDir;
+var k = 1;
+function updateGameArea() { //Funksjonen som oppdaterer spillet for hver frame
+    Game.clear();
+    if (Game.mouseX && Game.mouseY) { //Hvis museknappen er nede så er begge disse true
+        if (myUpBtn.clicked()) {
+            Game.mouseX = false;
+            Game.mouseY = false;
+        }
+    }
+    //Tastaturtrykk
+    if (Game.key == 37) { //37 er venstre-piltast
+      snakeDir = "left";
+      Game.key = false;
+    }
+    if (Game.key == 38) { //38 er oppover-piltast
+      snakeDir = "up";
+      Game.key = false;
+    }
+    if (Game.key == 39) { //39 er høyre-piltasten
+      snakeDir = "right";
+      Game.key = false;
+    }
+    if (Game.key == 40) { //40 er nedover-piltasten
+      snakeDir = "down";
+      Game.key = false;
+    }
+
+    if (k == 2) {
+      //2 = 1
+      snakeBody[k].x = snakeBody[k-1].x;
+      snakeBody[k].y = snakeBody[k-1].y;
+      //1 = 0
+      snakeBody[k-1].x = snakeBody[k-2].x;
+      snakeBody[k-1].y = snakeBody[k-2].y;
+    }
+    if (k == 1) {
+      snakeBody[k].x = snakeBody[k-1].x;
+      snakeBody[k].y = snakeBody[k-1].y;
+      k++;
+    }
+
+    /*
+    for (s = snakeLength - 1; s >= 0; s--) {
+      var i = 0;
+      var previousX = snakeBody[i].x;
+      var previousY = snakeBody[i].y;
+      i++;
+      snakeBody[s].x = previousX;
+      snakeBody[s].y = previousY;
+    }
+    */
+
+    //Retning på farten til slangen
+    if (snakeDir == "left"){
+      snakeDir = "left";
+      snakeBody[0].x -= 12;
+    }
+    if (snakeDir == "up"){
+      snakeDir = "up";
+      snakeBody[0].y -= 12;
+    }
+    if (snakeDir == "right"){
+      snakeDir = "right";
+      snakeBody[0].x += 12;
+    }
+    if (snakeDir == "down"){
+      snakeDir = "down";
+      snakeBody[0].y += 12;
+    }
+
+    for (i = 0; i <= snakeLength; i++) {
+      snakeBody[i].draw();
+    }
+    console.log("0");
+    console.log(snakeBody[0]);
+    console.log("1");
+    console.log(snakeBody[1]);
+    console.log("2");
+    console.log(snakeBody[2]);
+}
+</script>
+</body>
+</html>
